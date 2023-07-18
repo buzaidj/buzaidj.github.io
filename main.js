@@ -1,4 +1,4 @@
-const ENDPOINT = 'http://ec2-3-88-57-192.compute-1.amazonaws.com:3000/browsing';
+const ENDPOINT = 'https://api.jamesbuzaid.com/browsing';
 
 function timeAgo(date) {
     const now = new Date();
