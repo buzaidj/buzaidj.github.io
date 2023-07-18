@@ -94,6 +94,10 @@ function createElementsFromProcessedData(data) {
             img.src = elem.favIconUrl;
             img.alt = '';
 
+            if (elem.url.includes('github.com')) {
+                img.style.filter = "invert(100%)";
+            }
+
             browsingCardDiv.appendChild(img);
         }
 
