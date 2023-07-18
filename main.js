@@ -94,6 +94,7 @@ function createElementsFromProcessedData(data) {
             img.src = elem.favIconUrl;
             img.alt = '';
 
+            // A little hackish fix
             if (elem.url.includes('github.com')) {
                 img.style.filter = "invert(100%)";
             }
