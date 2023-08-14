@@ -180,6 +180,7 @@ STUFF FOR BROWSING HISTORY WIDGET
 }
 
 #browsing {
+    display: none;
     background-color: #eee;
     padding: 1rem 1rem;
     width: 200px;
