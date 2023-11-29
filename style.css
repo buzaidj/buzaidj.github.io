@@ -11,7 +11,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(1.5px);
     /* Adjust the blur amount as desired */
     z-index: -1;
     /* Ensure the overlay is behind other content */
@@ -35,7 +35,7 @@ body {
     min-width: 70vw;
     max-width: 80vw;
     margin: 2rem auto;
-    padding: 2rem;
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -115,10 +115,6 @@ figure {
 #left-col-intro {
     /* max-width: min-content; */
     overflow-wrap: break-word;
-}
-
-#bsplitlogo {
-    padding-left: 1rem;
 }
 
 .two-col-no-wrap {
