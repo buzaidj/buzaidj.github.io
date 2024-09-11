@@ -1,0 +1,26 @@
+---
+layout: post
+title:  "aliexpress LoRA transceivers"
+date:   2024-08-14 18:07:16 -0700
+categories: lora 915mhz
+permalink: /lora-transceivers/
+---
+
+![LoRA Node](/assets/lora.jpg){: width="500" }
+
+I'm using a set of $7 E32-900T20D LoRA transceivers to send data back from an edge compute machine learning device about 500 ft from my house at a rate of about a byte per second.
+
+LoRA is a digital proprietary spread spectrum radio communication technique designed for low power transmitters on license-free frequency bands. In the United States the 902 - 928 MhZ band is most frequency used. Currently, the [FCC is seeking comments](https://news.ycombinator.com/item?id=41226802) on re-assigning parts of the band to NextNav.
+
+The module by default is configured to around 870 MhZ which is illegal to transmit on unlicensed in the United States. You'll have to change the transmit frequency to something the 902 to 928 MhZ range. This requires putting the module to sleep using the M0 and M1 pins, sending a command to set the paramaters, and waking it back up to transmit / receive.
+
+There's no terminator byte (\0) that indicates a command or message is over. The module just waits until enough time has gone by before terminating the message. Sending commands or messages over `Serial` will involve blocking to ensure the message is ready to send another message.
+
+```
+void sendMessage(uint8_t* message, uint8_t len) {
+    LoraSerial.write(message, std::max(len, 55));
+    delay(50);
+}
+```
+
+I found the existing Arduino module written for this library a bit difficult to use, so I wrote a pretty [constrained one for my use case](https://github.com/buzaidj/ping-pong-e32/blob/main/E32Driver.cpp).

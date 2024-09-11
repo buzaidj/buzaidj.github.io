@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-09-10T23:23:42-07:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">aliexpress LoRA transceivers</title><link href="http://localhost:4000/lora-transceivers/" rel="alternate" type="text/html" title="aliexpress LoRA transceivers" /><published>2024-08-14T18:07:16-07:00</published><updated>2024-08-14T18:07:16-07:00</updated><id>http://localhost:4000/lora</id><content type="html" xml:base="http://localhost:4000/lora-transceivers/"><![CDATA[<p><img src="/assets/lora.jpg" alt="LoRA Node" width="500" /></p>
+
+<p>I’m using a set of $7 E32-900T20D LoRA transceivers to send data back from an edge compute machine learning device about 500 ft from my house at a rate of about a byte per second.</p>
+
+<p>LoRA is a digital proprietary spread spectrum radio communication technique designed for low power transmitters on license-free frequency bands. In the United States the 902 - 928 MhZ band is most frequency used. Currently, the <a href="https://news.ycombinator.com/item?id=41226802">FCC is seeking comments</a> on re-assigning parts of the band to NextNav.</p>
+
+<p>The module by default is configured to around 870 MhZ which is illegal to transmit on unlicensed in the United States. You’ll have to change the transmit frequency to something the 902 to 928 MhZ range. This requires putting the module to sleep using the M0 and M1 pins, sending a command to set the paramaters, and waking it back up to transmit / receive.</p>
+
+<p>There’s no terminator byte (\0) that indicates a command or message is over. The module just waits until enough time has gone by before terminating the message. Sending commands or messages over <code class="language-plaintext highlighter-rouge">Serial</code> will involve blocking to ensure the message is ready to send another message.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>void sendMessage(uint8_t* message, uint8_t len) {
+    LoraSerial.write(message, std::max(len, 55));
+    delay(50);
+}
+</code></pre></div></div>
+
+<p>I found the existing Arduino module written for this library a bit difficult to use, so I wrote a pretty <a href="https://github.com/buzaidj/ping-pong-e32/blob/main/E32Driver.cpp">constrained one for my use case</a>.</p>]]></content><author><name></name></author><category term="lora" /><category term="915mhz" /><summary type="html"><![CDATA[]]></summary></entry></feed>
