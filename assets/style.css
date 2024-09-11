@@ -13,8 +13,7 @@ body {
     height: 100%;
     
     /* this is slow */
-    /* backdrop-filter: blur(1.5px); */
-
+    backdrop-filter: blur(1.5px);
     z-index: -1;
 }
 
