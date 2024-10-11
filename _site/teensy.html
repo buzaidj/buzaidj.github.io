@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Machine learning for detecting skate pops on a Teensy 4.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap');
+    </style>
+    <link rel="stylesheet" type="text/css" href="/assets/style.css">
+</head>
+
+<body>
+    <div class="overlay"></div>
+<div>
+</div>
+    <div id="main">
+        <div class="two-col">
+            <div id="left-col-intro">
+                <div>
+                <h1>James Buzaid's blog</h1>
+                    <div class="socials">
+                        <p class="social-link"><a href="/">Home</a></p>
+                        <p class="social-link"><a href="/blog">Blog</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <div class="two-col">
+            <div>
+                <div>
+                    <h2>Machine learning for detecting skate pops on a Teensy 4.1</h2>
+                    <div class="post-content">
+                        <p>I live close to a skate park and skate there often. I wanted to build a system that could detect how busy the skate park near me is without actually recording anyone or tracking anyone. Video was out of the question, and the device would only operate on audio without the audio even leaving the edge device. I wanted to show that machine learning can be anonymous and compress data so much that its original form no longer exists.</p>
+
+<p>I built a system that analyzes half-second chunks of audio to detect whether there are skateboard sounds or not (specially skate “pops”). The training method is pretty extensible to other forms of audio. It uses a 33-dimensional feature vector based on Fourier transforms.</p>
+
+<p>Predicted data would be sent back from that device to my house a block away, and a website would be updated with the current state of the park. I shelved the project for now due to the difficulty of getting the solar power and battery capacity to run the power-hungry Teensy 4.1 I’m using. I’ll pick it back up someday if there’s interest.</p>
+
+<h2 id="data-collection">Data Collection</h2>
+
+<p>The Teensy 4.1 has an SD card. I built a program for data collection that records WAV files onto the SD card. The device has two buttons: one for starting the recording (the black one with tape over it), and another (red mechanical keyboard switch) for holding during a skateboard sound. The data collector produces four files per audio recording: an audio file, a labels file with the beginning and ends of half-second chunks, a helper file with when the red button was pressed, and a file of feature vectors for each half-second of audio (<a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L509">code pointer</a>).</p>
+
+<p><img src="/assets/teensy4_1.jpg" alt="Data collector (and predictor)" width="500" /></p>
+
+<h2 id="feature-extraction">Feature Extraction</h2>
+
+<p>I had to choose a method of feature extraction that would run efficiently on the Teensy. I did all the feature extraction/vectorization of audio on the Teensy even for training. This locked me into a certain set of features, but it made it far easier to know that my features were being generated the same between training and deployment.</p>
+
+<p>I needed to generate vectors for half-second chunks. Buffering up a half-second of audio and running an FFT on that isn’t feasible due to memory constraints on the Teensy. Instead, smaller frames of audio are taken and aggregated together. Frames are 1764 samples long and overlap by 882 samples with their neighbors. This means there are 25 frames in a half-second chunk of audio.</p>
+
+<p>Each frame is vectorized when it is received via FFT to compute <code class="language-plaintext highlighter-rouge">v_real</code> and <code class="language-plaintext highlighter-rouge">v_imag</code> of size 2048 (power of two above 1764). The sample rate is 44.1 kHz, meaning the max frequency observed by FFT is 22.05 kHz. The result in <code class="language-plaintext highlighter-rouge">v_real</code> is distributed evenly in the frequency domain up to half the sample rate. I bin that frequency into ten logarithmically scaled bins (<a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L867">code pointer</a>).</p>
+
+<p>Two more features are added onto the vector. They are the root mean squared energy and the standard deviation of the root mean squared energy computed <a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L787">here</a>. Thus each frame has a vector of length 12.</p>
+
+<p>After 25 frames are collected, they are aggregated into a dimension 33 vector as follows (<a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L1047">code pointer</a>). For each frequency bucket, the maximum of that bucket, the standard deviation of that bucket, and the mean of that bucket across the 25 frames are included. Additionally, the mean root mean squared energy and standard deviations of root mean squared energy across the 25 frames are included. Another feature, the “sum delta energies,” captures the L1 norm of variation in energy across frames, which may perform better because the skate pop sounds are sparse.</p>
+
+<h2 id="data-labeling">Data Labeling</h2>
+
+<p>Labeling solely requires marking the labels to 1 on the sections of audio where there are skateboard sounds. I used Audacity for this.</p>
+
+<p><img src="/assets/labelling.png" alt="Labeling" width="500" /></p>
+
+<h2 id="training">Training</h2>
+
+<p>Feature vectors and labels are created in previous steps and maintained in a SQLite database. Training requires loading these vectors and labels, normalizing, and running backpropagation on the vectors for many epochs. Since there are far more 0 labels than 1 labels in the training dataset, I chose to use cross-entropy loss. The network has two hidden layers of 64 neurons and an output layer of two neurons where the higher probability neuron determines the predicted layer.</p>
+
+<p><a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/data_labelled/nn_model.py#L61">Training code</a></p>
+
+<h2 id="deploying-the-model">Deploying the Model</h2>
+
+<p>I recreated the model in C++ on the device via exporting the weights to a <a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/nn_model_params.h">.h file</a> that gets deployed onto the Teensy. I wrote an <a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L113">implementation</a> of a forward pass function on the Teensy as well.</p>
+
+<p>Here’s it in action trained on me tapping my pen:</p>
+
+<video controls="" width="300">
+  <source src="/assets/detector.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

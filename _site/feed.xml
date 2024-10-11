@@ -1,10 +1,82 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-09-10T23:47:01-07:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">aliexpress LoRA transceivers</title><link href="http://localhost:4000/lora-transceivers/" rel="alternate" type="text/html" title="aliexpress LoRA transceivers" /><published>2024-08-14T18:07:16-07:00</published><updated>2024-08-14T18:07:16-07:00</updated><id>http://localhost:4000/lora</id><content type="html" xml:base="http://localhost:4000/lora-transceivers/"><![CDATA[<p><img src="/assets/lora.jpg" alt="LoRA Node" width="500" /></p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-10-11T12:51:14-07:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Machine learning for detecting skate pops on a Teensy 4.1</title><link href="http://localhost:4000/teensy" rel="alternate" type="text/html" title="Machine learning for detecting skate pops on a Teensy 4.1" /><published>2024-10-11T10:33:00-07:00</published><updated>2024-10-11T10:33:00-07:00</updated><id>http://localhost:4000/machine_learning_teensy</id><content type="html" xml:base="http://localhost:4000/teensy"><![CDATA[<p>I live close to a skate park and skate there often. I wanted to build a system that could detect how busy the skate park near me is without actually recording anyone or tracking anyone. Video was out of the question, and the device would only operate on audio without the audio even leaving the edge device. I wanted to show that machine learning can be anonymous and compress data so much that its original form no longer exists.</p>
 
-<p>I’m using a set of $7 E32-900T20D LoRA transceivers to send data back from an edge compute machine learning device about 500 ft from my house at a rate of about a byte per second.</p>
+<p>I built a system that analyzes half-second chunks of audio to detect whether there are skateboard sounds or not (specially skate “pops”). The training method is pretty extensible to other forms of audio. It uses a 33-dimensional feature vector based on Fourier transforms.</p>
 
-<p>LoRA is a digital proprietary spread spectrum radio communication technique designed for low power transmitters on license-free frequency bands. In the United States the 902 - 928 MhZ band is most frequency used. Currently, the <a href="https://news.ycombinator.com/item?id=41226802">FCC is seeking comments</a> on re-assigning parts of the band to NextNav.</p>
+<p>Predicted data would be sent back from that device to my house a block away, and a website would be updated with the current state of the park. I shelved the project for now due to the difficulty of getting the solar power and battery capacity to run the power-hungry Teensy 4.1 I’m using. I’ll pick it back up someday if there’s interest.</p>
 
-<p>The module by default is configured to around 870 MhZ which is illegal to transmit on unlicensed in the United States. You’ll have to change the transmit frequency to something the 902 to 928 MhZ range. This requires putting the module to sleep using the M0 and M1 pins, sending a command to set the paramaters, and waking it back up to transmit / receive.</p>
+<h2 id="data-collection">Data Collection</h2>
+
+<p>The Teensy 4.1 has an SD card. I built a program for data collection that records WAV files onto the SD card. The device has two buttons: one for starting the recording (the black one with tape over it), and another (red mechanical keyboard switch) for holding during a skateboard sound. The data collector produces four files per audio recording: an audio file, a labels file with the beginning and ends of half-second chunks, a helper file with when the red button was pressed, and a file of feature vectors for each half-second of audio (<a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L509">code pointer</a>).</p>
+
+<p><img src="/assets/teensy4_1.jpg" alt="Data collector (and predictor)" width="500" /></p>
+
+<h2 id="feature-extraction">Feature Extraction</h2>
+
+<p>I had to choose a method of feature extraction that would run efficiently on the Teensy. I did all the feature extraction/vectorization of audio on the Teensy even for training. This locked me into a certain set of features, but it made it far easier to know that my features were being generated the same between training and deployment.</p>
+
+<p>I needed to generate vectors for half-second chunks. Buffering up a half-second of audio and running an FFT on that isn’t feasible due to memory constraints on the Teensy. Instead, smaller frames of audio are taken and aggregated together. Frames are 1764 samples long and overlap by 882 samples with their neighbors. This means there are 25 frames in a half-second chunk of audio.</p>
+
+<p>Each frame is vectorized when it is received via FFT to compute <code class="language-plaintext highlighter-rouge">v_real</code> and <code class="language-plaintext highlighter-rouge">v_imag</code> of size 2048 (power of two above 1764). The sample rate is 44.1 kHz, meaning the max frequency observed by FFT is 22.05 kHz. The result in <code class="language-plaintext highlighter-rouge">v_real</code> is distributed evenly in the frequency domain up to half the sample rate. I bin that frequency into ten logarithmically scaled bins (<a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L867">code pointer</a>).</p>
+
+<p>Two more features are added onto the vector. They are the root mean squared energy and the standard deviation of the root mean squared energy computed <a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L787">here</a>. Thus each frame has a vector of length 12.</p>
+
+<p>After 25 frames are collected, they are aggregated into a dimension 33 vector as follows (<a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L1047">code pointer</a>). For each frequency bucket, the maximum of that bucket, the standard deviation of that bucket, and the mean of that bucket across the 25 frames are included. Additionally, the mean root mean squared energy and standard deviations of root mean squared energy across the 25 frames are included. Another feature, the “sum delta energies,” captures the L1 norm of variation in energy across frames, which may perform better because the skate pop sounds are sparse.</p>
+
+<h2 id="data-labeling">Data Labeling</h2>
+
+<p>Labeling solely requires marking the labels to 1 on the sections of audio where there are skateboard sounds. I used Audacity for this.</p>
+
+<p><img src="/assets/labelling.png" alt="Labeling" width="500" /></p>
+
+<h2 id="training">Training</h2>
+
+<p>Feature vectors and labels are created in previous steps and maintained in a SQLite database. Training requires loading these vectors and labels, normalizing, and running backpropagation on the vectors for many epochs. Since there are far more 0 labels than 1 labels in the training dataset, I chose to use cross-entropy loss. The network has two hidden layers of 64 neurons and an output layer of two neurons where the higher probability neuron determines the predicted layer.</p>
+
+<p><a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/data_labelled/nn_model.py#L61">Training code</a></p>
+
+<h2 id="deploying-the-model">Deploying the Model</h2>
+
+<p>I recreated the model in C++ on the device via exporting the weights to a <a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/nn_model_params.h">.h file</a> that gets deployed onto the Teensy. I wrote an <a href="https://github.com/buzaidj/skate-pops/blob/be8aab726e8b471adc390545297363209e8f0a56/teensy/teensy_program/teensy_program.ino#L113">implementation</a> of a forward pass function on the Teensy as well.</p>
+
+<p>Here’s it in action trained on me tapping my pen:</p>
+
+<video controls="" width="300">
+  <source src="/assets/detector.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>]]></content><author><name></name></author><category term="ml" /><category term="teensy" /><category term="microcontroller" /><summary type="html"><![CDATA[I live close to a skate park and skate there often. I wanted to build a system that could detect how busy the skate park near me is without actually recording anyone or tracking anyone. Video was out of the question, and the device would only operate on audio without the audio even leaving the edge device. I wanted to show that machine learning can be anonymous and compress data so much that its original form no longer exists.]]></summary></entry><entry><title type="html">Better T9 Keyboards</title><link href="http://localhost:4000/better-t9/" rel="alternate" type="text/html" title="Better T9 Keyboards" /><published>2024-10-11T08:05:00-07:00</published><updated>2024-10-11T08:05:00-07:00</updated><id>http://localhost:4000/better-t9-ideas</id><content type="html" xml:base="http://localhost:4000/better-t9/"><![CDATA[<div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center">
+    <div style="text-align: center">
+        <img src="/assets/cat-s22.jpg" width="200" />
+        <div>Cat S22</div>
+    </div>
+    <div style="text-align: center">
+        <img src="/assets/t9.png" width="100" />
+        <div>T9 Keyboard</div>
+    </div>
+    <div style="text-align: center">
+        <img src="/assets/t9-misspelled-word.png" width="200" />
+        <div>"Abreviations"</div>
+    </div>
+</div>
+
+<p>The CAT S22 is a $65 flip phone that runs Android. It has a numpad and a small touch screen. I’ve been using it as my primary phone for the past few months. The screen is so small it’s hard to do anything else other than texting, calling, and some basic web surfing. Which is why I bought it.</p>
+
+<p>Although the phone has a numpad, it doesn’t come stock with a T9 keyboard application. T9 is a predictive text technology for mobile phones with numeric keypards that makes texting easier. Typing “43556” for example produces “hello”. Becasue numeric strings don’t uniquely map to words, after typing the numbers one clicks left/right with the D-pad to select their desired word.</p>
+
+<p>I downloaded the TT9 app which is great and has all the core T9 functionality. The only issue I’ve run into is that TT9’s implementation, like most, isn’t very robust to small spelling errors. For example spelling “abbreviations” with one “b” goes horribly wrong. Currently, the numbers you type must all have some mapping to the letters in the word you want. Missing a number, adding an additional number, or mistyping one number for another results in the desired word not appearing in the result set and the user having to start typing the word over again.</p>
+
+<p><img src="/assets/t9_db_example.png" alt="t9 example" width="500" /></p>
+
+<p>TT9 uses a SQLite database with T9 sequences and words like the one in the image above and upon each key press queries the dictionary for that sequence. Querying the dictionary produces the set of words that start with that sequence subject to ordering by word length and frequency and a limit. There doesn’t appear to be any in memory caching of previous results from prior queries.</p>
+
+<p>One approach to adding “spell correction” is adding all results with edit distance 1 to the result set. We can substitue a character, insert a character in any position, or delete any character. For a five character word we’d have to make an additional 110 queries. The number of queries made grows quadratically with sequence length. This is infeasible.</p>
+
+<p>Another approach is to think of better backing database representations for T9 querying. There’s a natural tree / graph structure to this problem. I’m going to attempt one of these solutions and report back in a future post.</p>]]></content><author><name></name></author><category term="t9" /><category term="keyboard" /><category term="ml" /><category term="algorithms" /><category term="data-structures" /><summary type="html"><![CDATA[Cat S22 T9 Keyboard "Abreviations"]]></summary></entry><entry><title type="html">AliExpress LoRa Transceivers</title><link href="http://localhost:4000/lora-transceivers/" rel="alternate" type="text/html" title="AliExpress LoRa Transceivers" /><published>2024-08-14T18:07:16-07:00</published><updated>2024-08-14T18:07:16-07:00</updated><id>http://localhost:4000/lora</id><content type="html" xml:base="http://localhost:4000/lora-transceivers/"><![CDATA[<p><img src="/assets/lora.jpg" alt="LoRa Node" width="500" /></p>
+
+<p>I’m using a set of $7 E32-900T20D LoRa transceivers to send data back from an edge compute machine learning device about 500 ft from my house at a rate of about a byte per second.</p>
+
+<p>LoRa is a digital proprietary spread spectrum radio communication technique designed for low power transmitters on license-free frequency bands. In the United States, the 902 - 928 MHz band is most frequently used. Currently, the <a href="https://news.ycombinator.com/item?id=41226802">FCC is seeking comments</a> on re-assigning parts of the band to NextNav.</p>
+
+<p>The module by default is configured to around 870 MHz, which is illegal to transmit on unlicensed in the United States. You’ll have to change the transmit frequency to something in the 902 to 928 MHz range. This requires putting the module to sleep using the M0 and M1 pins, sending a command to set the parameters, and waking it back up to transmit/receive.</p>
 
 <p>There’s no terminator byte (\0) that indicates a command or message is over. The module just waits until enough time has gone by before terminating the message. Sending commands or messages over <code class="language-plaintext highlighter-rouge">Serial</code> will involve blocking to ensure the message is ready to send another message.</p>
 
