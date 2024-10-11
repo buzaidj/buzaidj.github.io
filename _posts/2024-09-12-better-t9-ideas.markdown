@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Better T9 Keyboards"
+title:  "Better T9 Keyboards (WIP)"
 date:   2024-10-11 08:05:00 -0700
 categories: t9 keyboard ml algorithms data-structures
 permalink: /better-t9/
