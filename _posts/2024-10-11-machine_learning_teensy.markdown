@@ -8,7 +8,7 @@ permalink: /teensy
 
 I live close to a skate park and skate there often. I wanted to build a system that could detect how busy the skate park near me is without actually recording anyone or tracking anyone. Video was out of the question, and the device would only operate on audio without the audio even leaving the edge device. I wanted to show that machine learning can be anonymous and compress data so much that its original form no longer exists.
 
-I built a system that analyzes half-second chunks of audio to detect whether there are skateboard sounds or not (specially skate "pops"). The training method is pretty extensible to other forms of audio. It uses a 33-dimensional feature vector based on Fourier transforms.
+I built a system that analyzes half-second chunks of audio to detect whether there are skateboard sounds or not (specifically skate "pops"). The training method is pretty extensible to other forms of audio. It uses a 33-dimensional feature vector based on Fourier transforms.
 
 Predicted data would be sent back from that device to my house a block away, and a website would be updated with the current state of the park. I shelved the project for now due to the difficulty of getting the solar power and battery capacity to run the power-hungry Teensy 4.1 I'm using. I'll pick it back up someday if there's interest.
 
