@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "I finished RTK 2200 kanji later"
+title:  "I finished RTK! 2200 kanji later"
 date:   2025-05-25 17:00:00 -0700
 categories: japanese language kanji
 permalink: /rtk/
