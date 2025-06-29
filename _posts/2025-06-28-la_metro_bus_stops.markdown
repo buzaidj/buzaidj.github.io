@@ -11,6 +11,7 @@ A few years ago, after reading about [La Sombrita](https://en.wikipedia.org/wiki
 ![the rate a stop UX](/assets/rate_a_stop.png){: width="500" }
 
 [Help me gather some data](https://buzzy-bus-stops.web.app)
+
 [Download the data](https://buzzy-bus-stops.web.app/summary)
 
 ### Results (as of June 2025)
