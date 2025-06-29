@@ -1,12 +1,11 @@
 ---
-title: About
+title: Blog
 ---
-
 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>James Buzaid</title>
+    <title>James Buzaid - Blog</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap');
@@ -22,58 +21,32 @@ title: About
         <div class="two-col">
             <div id="left-col-intro">
                 <div>
-                <h1>James Buzaid's blog</h1>
-                    <div class="socials">
-                        <p class="social-link"><a href="/">Home</a></p>
-                        <p class="social-link"><a href="/blog">Blog</a></p>
-                    </div>
+                <h1>james's blog</h1>
                 </div>
             </div>
         </div>
         <hr>
         <div class="two-col">
             <div>
-                <p class="intro-text">I work at Airtable building software, mostly focused on increasing scale and improving backend performance</p>
-                <div class="socials">
-                    <p class="social-link"><a href="https://github.com/buzaidj">GitHub</a></p>
-                    <p class="social-link"><a href="mailto:james.buzaid@gmail.com">james.buzaid@gmail.com</a></p>
-                </div>
-                <div style="margin-top: 3em;">
-                    <h2>currently...</h2>
-                    <ul>
-                        <li>
-                            <p class="currently-item"><span class="bold">Software engineer @ Airtable</span>
-                        </li>
-                    </ul>
-                </div>
-                <div style="margin-top: 1em;">
-                    <h2>previously...</h2>
-                    <ul>
-                        <!-- <li>
-                            <p class="currently-item"><span class="bold"><a href="https://gov2me.com">gov2me</a></span>
-                                —
-                                local legislation tracker and search</p>
-                        </li> -->
-                        <li>
-                            <p class="currently-item"><a href="https://bananasplit.app">Banana Split</a> — built a
-                                receipt splitting
-                                app with friends
-                            </p>
-                        <li>
-                            <p class="currently-item">Creator of <a class='bold'
-                                    href='https://buzzy-bus-stops.web.app/'>Rate an LA Metro
-                                    Stop</a> - a response to La Sombrita to gather data on LA metro bus stops generally
-                            </p>
-                        </li>
-                    </ul>
-                </div>
+                <h2>about</h2>
+                <p class="intro-text">I work at Airtable building software, mostly focused on increasing scale and improving backend performance. I'm also learning Japanese and working on a variety of projects.</p>
             </div>
-            <!-- <div id="right-col-image">
-                <figure id="me">
-                    <img src="{{ '/assets/flip.jpg' | relative_url }}" id="me" width="150" aria-label="Me" />
-                    <figcaption>San Francisco, 2024</figcaption>
-                </figure>
-            </div> -->
+        </div>
+
+        <div class="two-col">
+            <div>
+                <h2>posts and links</h2>
+                <ul>
+                {% for post in site.posts %}
+                    <li class="blog-post">
+                        <a href="{{ post.url }}">{{ post.title }}</a> — <span>{{ post.date | date: "%B %d, %Y" }}</span>
+                    </li>
+                {% endfor %}
+                <li class="blog-post">
+                    <a href="https://bananasplit.app">bananasplit.app - receipt splitting</a>
+                </li>
+                </ul>
+            </div>
         </div>
 </body>
 </html>

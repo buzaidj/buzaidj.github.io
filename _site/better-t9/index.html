@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Better T9 Keyboards (WIP)</title>
+    <title>T9 keyboards and spell-checking</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap');
@@ -17,10 +17,9 @@
         <div class="two-col">
             <div id="left-col-intro">
                 <div>
-                <h1>James Buzaid's blog</h1>
+                <h1>james's blog</h1>
                     <div class="socials">
                         <p class="social-link"><a href="/">Home</a></p>
-                        <p class="social-link"><a href="/blog">Blog</a></p>
                     </div>
                 </div>
             </div>
@@ -29,7 +28,7 @@
         <div class="two-col">
             <div>
                 <div>
-                    <h2>Better T9 Keyboards (WIP)</h2>
+                    <h2>T9 keyboards and spell-checking</h2>
                     <div class="post-content">
                         <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center">
     <div style="text-align: center">
@@ -54,11 +53,11 @@
 
 <p><img src="/assets/t9_db_example.png" alt="t9 example" width="500" /></p>
 
-<p>TT9 uses a SQLite database with T9 sequences and words like the one in the image above and upon each key press queries the dictionary for that sequence. Querying the dictionary produces the set of words that start with that sequence subject to ordering by word length and frequency and a limit. There doesn’t appear to be any in memory caching of previous results from prior queries.</p>
+<p>TT9 uses a SQLite database with T9 sequences and words like the one in the image above and upon each key press queries the dictionary for that sequence. Querying the dictionary produces the set of words that start with that sequence subject to ordering by word length and frequency and a limit. There doesn’t appear to be much caching of results from previous queries (e.g. going from hel -&gt; hell -&gt; seems to requery the database) meaning keeping queries short is pretty important.</p>
 
-<p>One approach to adding “spell correction” is adding all results with edit distance 1 to the result set. We can substitue a character, insert a character in any position, or delete any character. For a five character word we’d have to make an additional 110 queries. The number of queries made grows quadratically with sequence length. This is infeasible.</p>
+<p>One approach to adding “spell correction” is adding all results with edit distance 1 to the result set. We can substitue a character, insert a character in any position, or delete any character. For a five character word we’d have to make an additional 110 queries. The number of queries made grows quadratically with sequence length. This seems infeasible due to the exploding number of queries we’ll need to make.</p>
 
-<p>Another approach is to think of better backing database representations for T9 querying. There’s a natural tree / graph structure to this problem. I’m going to attempt one of these solutions and report back in a future post.</p>
+<p>Another simple approach is to just “generate common mispellings” of words, thereby pushing the explosion on the side of the database rather than the number of queries made.</p>
 
                     </div>
                 </div>

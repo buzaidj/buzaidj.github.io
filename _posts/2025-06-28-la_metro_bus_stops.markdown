@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "What Does Your Typical LA Metro Bus Stop Look Like?"
+title: "Do LA Metro bus stops have adequate shelter?"
 date: 2025-06-28 14:00:00 -0700
 categories: transit
 permalink: /la-bus-stops

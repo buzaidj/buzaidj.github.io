@@ -19,12 +19,12 @@ body {
 }
 
 body {
-    background-image: url('background.jpg');
+    background-image: url('new_background.jpg');
     background-size: cover;
     background-repeat: no-repeat;
     min-height: 100vh;
     background-position: center;
-    background-color: #f1f1f1;
+    background-color: #e4e3b2;
     font-family: 'Inter', sans-serif;
     margin: auto;
     display: flex;
@@ -33,7 +33,7 @@ body {
 #main {
     background-color: rgba(242, 245, 255, 0.9);
     box-shadow: 1px 1px 5px rgba(92, 52, 92, 0.8);
-    width: 85vw;
+    max-width: 800px;
     margin: 2rem auto;
     padding: 1.5rem;
     display: flex;
