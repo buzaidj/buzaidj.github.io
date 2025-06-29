@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Better T9 Keyboards (WIP)"
+title:  "T9 keyboards and spell-checking"
 date:   2024-10-11 08:05:00 -0700
 categories: t9 keyboard ml algorithms data-structures
 permalink: /better-t9/
@@ -29,8 +29,8 @@ I downloaded the TT9 app which is great and has all the core T9 functionality. T
 
 ![t9 example](/assets/t9_db_example.png){: width="500" }
 
-TT9 uses a SQLite database with T9 sequences and words like the one in the image above and upon each key press queries the dictionary for that sequence. Querying the dictionary produces the set of words that start with that sequence subject to ordering by word length and frequency and a limit. There doesn't appear to be any in memory caching of previous results from prior queries.
+TT9 uses a SQLite database with T9 sequences and words like the one in the image above and upon each key press queries the dictionary for that sequence. Querying the dictionary produces the set of words that start with that sequence subject to ordering by word length and frequency and a limit. There doesn't appear to be much caching of results from previous queries (e.g. going from hel -> hell -> seems to requery the database) meaning keeping queries short is pretty important. 
 
-One approach to adding "spell correction" is adding all results with edit distance 1 to the result set. We can substitue a character, insert a character in any position, or delete any character. For a five character word we'd have to make an additional 110 queries. The number of queries made grows quadratically with sequence length. This is infeasible.
+One approach to adding "spell correction" is adding all results with edit distance 1 to the result set. We can substitue a character, insert a character in any position, or delete any character. For a five character word we'd have to make an additional 110 queries. The number of queries made grows quadratically with sequence length. This seems infeasible due to the exploding number of queries we'll need to make.
 
-Another approach is to think of better backing database representations for T9 querying. There's a natural tree / graph structure to this problem. I'm going to attempt one of these solutions and report back in a future post.
+Another simple approach is to just "generate common mispellings" of words, thereby pushing the explosion on the side of the database rather than the number of queries made.
