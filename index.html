@@ -28,21 +28,18 @@ title: Blog
             <p class="intro-text">I work at Airtable building software, mostly focused on increasing scale and improving backend performance. I'm also learning Japanese and working on a variety of projects.</p>
         </div>
     </div>
-
-    <div class="two-col">
-        <div>
-            <h2>posts and links</h2>
-            <ul>
-            {% for post in site.posts %}
-                <li class="blog-post">
-                    <a href="{{ post.url }}">{{ post.title }}</a> — <span>{{ post.date | date: "%B %d, %Y" }}</span>
-                </li>
-            {% endfor %}
+    <div>
+        <h2>posts and links</h2>
+        <ul>
+        {% for post in site.posts %}
             <li class="blog-post">
-                <a href="https://bananasplit.app">bananasplit.app - receipt splitting</a>
+                <a href="{{ post.url }}">{{ post.title }}</a> — <span>{{ post.date | date: "%B %d, %Y" }}</span>
             </li>
-            </ul>
-        </div>
+        {% endfor %}
+        <li class="blog-post">
+            <a href="https://bananasplit.app">bananasplit.app - receipt splitting</a>
+        </li>
+        </ul>
     </div>
 </body>
 </html>

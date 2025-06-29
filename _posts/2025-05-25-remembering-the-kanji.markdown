@@ -8,7 +8,7 @@ permalink: /rtk/
 
 I finally finished James Heisig's "Remembering the Kanji" (RTK). RTK is a somewhat heterodox approach of teaching the 2220 Jōyō Kanji 常用漢字. RTK is learning how to recall a kanji from a keyword by remembering radicals creating helpful mneomnics involving the Kanji. There's no readings or vocabulary taught in the process.
 
-### What I changed from the "stock" RTK
+### what I changed from the "stock" RTK
 
 RTK is hard. A lot of the keywords Heisig are synonyms. Upon review, if I ran into troubling synonyms, I decided that rather than pull my hair out, I'd just make the cards a little easier by adding one of the readings I knew to the card, or a longer definition.
 
@@ -27,7 +27,7 @@ I also found it helpful to add radicals to the anki deck, something I didn't see
 
 ![a card for the "grow up" radical](/assets/rtk_grow_up_radical.png){: width="500" }
 
-### What I did wrong / learned along the way
+### what I did wrong / learned along the way
 
 - From kanji 1 to 30: I was convinced mnemonic were silly and I was too old for little stories. I was wrong.
 - From kanji 1 to 100: I reviewed from kanji to keyword. This is wrong. Don't do this. Heisig warns against this on several occasions. Production of a kanji from memory wires mental pathways in a way that simply remembering a keyword does not.
@@ -47,4 +47,4 @@ These are really important. At first they seemed silly to me, but they help a to
 
 ### would I do it again?
 
-I don't know. I feel like when I was deep in the RTK process, I was picking up and cementing previously known kanji really well. Now that I'm done with RTK my memory feels a little sluggish, and some characters don't come back so well. I feel like it did wonders for my visual recognition of kanji, but it's hard to say I wouldn't have the same or better result from spending the two hours I spent on RTK each day just reading a novel for example.
+I don't know. I feel like when I was deep in the RTK process, I was picking up and cementing previously known kanji really well. Now that I'm done with RTK my memory feels a little sluggish, and some characters don't come back so well. Nonetheless, I feel like it did wonders for my visual recognition of kanji, but it's hard to say I wouldn't have the same or better result from spending the two hours I spent on RTK each day just reading a novel for example.
