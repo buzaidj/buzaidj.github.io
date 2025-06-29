@@ -14,4 +14,4 @@ A few years ago, after reading about [La Sombrita](https://en.wikipedia.org/wiki
 [Download the data](https://buzzy-bus-stops.web.app/summary)
 
 ### Results (as of June 2025)
-None of the four La Sombrita stops appear in the results (yet)! Of about 175 unique stops studied, roughly **25% have shelters**, 41% have shade, and 51% have seating. Even though 41% of stops had shade during observation, the shade structures in question may be buildings or trees, offering temporary shade depending on the time of day. So 41% could be an overestimate.
+I finally compiled the results a few years later. I sent the link to a few friends and have observations for around 175 unique bus stops. None of the four La Sombrita stops appear in the results (yet)! Of the 175 unique stops studied, reportedly **25% have a shelter**, 41% have shade, and 51% have seating. Even though 41% of stops had shade during observation, the shade structures in question seem to be buildings or trees, offering temporary shade depending on the time of day. So 41% could be an overestimate.
