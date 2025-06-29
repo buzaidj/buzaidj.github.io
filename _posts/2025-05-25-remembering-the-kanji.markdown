@@ -47,4 +47,4 @@ These are really important. At first they seemed silly to me, but they help a to
 
 ### would I do it again?
 
-I don't know. I feel like when I was deep in the RTK process, I was picking up and cementing previously known kanji really well. Now that I'm done with RTK my memory feels a little sluggish, and some characte
+I don't know. I feel like when I was deep in the RTK process, I was picking up and cementing previously known kanji really well. Now that I'm done with RTK my memory feels a little sluggish, and some characters don't come back so well. I feel like it did wonders for my visual recognition of kanji, but it's hard to say I wouldn't have the same or better result from spending the two hours I spent on RTK each day just reading a novel for example.
