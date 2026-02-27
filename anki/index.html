@@ -91,5 +91,104 @@ title: Anki Lookup
         <div id="status">loading...</div>
         <div id="results"></div>
     </div>
+
+    <script type="module">
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+        const statusEl = document.getElementById('status');
+        const searchBox = document.getElementById('search-box');
+        const resultsEl = document.getElementById('results');
+
+        let cards = null;
+        let embeddings = null;  // Float32Array, N x 384
+        let embedder = null;
+        const DIM = 384;
+
+        async function init() {
+            statusEl.textContent = 'downloading model (first time only)...';
+
+            const [cardsData, embBuf, pipe] = await Promise.all([
+                fetch('/assets/anki/cards.json').then(r => r.json()),
+                fetch('/assets/anki/embeddings.bin').then(r => r.arrayBuffer()),
+                pipeline('feature-extraction', 'Xenova/multilingual-e5-small'),
+            ]);
+
+            cards = cardsData;
+            embeddings = new Float32Array(embBuf);
+            embedder = pipe;
+
+            statusEl.textContent = `ready — ${cards.length} cards loaded`;
+            searchBox.disabled = false;
+            searchBox.focus();
+        }
+
+        function cosineSim(a, b, offset) {
+            let dot = 0;
+            let normB = 0;
+            for (let i = 0; i < DIM; i++) {
+                const bv = b[offset + i];
+                dot += a[i] * bv;
+                normB += bv * bv;
+            }
+            return dot / (Math.sqrt(normB) + 1e-8);
+        }
+
+        async function search(query) {
+            if (!query.trim() || !embedder) return;
+
+            const output = await embedder(`query: ${query}`, { pooling: 'mean', normalize: true });
+            const qvec = output.data;
+
+            const scores = new Float32Array(cards.length);
+            for (let i = 0; i < cards.length; i++) {
+                scores[i] = cosineSim(qvec, embeddings, i * DIM);
+            }
+
+            // Get top 20 indices
+            const indices = Array.from({ length: cards.length }, (_, i) => i);
+            indices.sort((a, b) => scores[b] - scores[a]);
+            const top = indices.slice(0, 20);
+
+            resultsEl.innerHTML = '';
+            for (const idx of top) {
+                const c = cards[idx];
+                const score = scores[idx];
+                const div = document.createElement('div');
+                div.className = 'result';
+
+                let html = '<div>';
+                html += `<span class="result-score">${score.toFixed(3)}</span>`;
+                html += `<span class="result-word">${esc(c.w)}</span>`;
+                if (c.r && c.r !== c.w) {
+                    html += `<span class="result-reading">(${esc(c.r)})</span>`;
+                }
+                html += '</div>';
+                if (c.m) html += `<div class="result-meaning">${esc(c.m)}</div>`;
+                if (c.s) html += `<div class="result-sentence">${esc(c.s)}</div>`;
+                if (c.d) html += `<div class="result-deck">${esc(c.d)}</div>`;
+
+                div.innerHTML = html;
+                resultsEl.appendChild(div);
+            }
+        }
+
+        function esc(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        // Debounced input handler
+        let timer = null;
+        searchBox.addEventListener('input', () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => search(searchBox.value), 250);
+        });
+
+        init().catch(err => {
+            statusEl.textContent = `error: ${err.message}`;
+            console.error(err);
+        });
+    </script>
 </body>
 </html>
