@@ -1,0 +1,95 @@
+---
+title: Anki Lookup
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>anki lookup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap');
+    </style>
+    <link rel="stylesheet" type="text/css" href="{{ '/assets/style.css' | relative_url }}">
+    <style>
+        #search-box {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            font-size: 16px;
+            font-family: 'Inter', sans-serif;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-bottom: 0.5rem;
+        }
+        #search-box:focus {
+            outline: none;
+            border-color: #888;
+        }
+        #status {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+        .result {
+            padding: 0.7rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .result:last-child {
+            border-bottom: none;
+        }
+        .result-word {
+            font-weight: 500;
+            font-size: 18px;
+        }
+        .result-reading {
+            font-weight: 300;
+            color: #666;
+            margin-left: 0.4rem;
+        }
+        .result-meaning {
+            margin-top: 0.2rem;
+            font-weight: 300;
+            font-size: 15px;
+        }
+        .result-sentence {
+            margin-top: 0.2rem;
+            font-size: 13px;
+            color: #555;
+            font-weight: 300;
+        }
+        .result-deck {
+            font-size: 11px;
+            color: #aaa;
+            margin-top: 0.15rem;
+        }
+        .result-score {
+            font-size: 11px;
+            color: #bbb;
+            float: right;
+            margin-top: 0.15rem;
+        }
+        #results {
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay"></div>
+    <div id="main">
+        <div id="left-col-intro">
+            <h1>my reverse anki lookup</h1>
+            <div class="links">
+                <p><a href="/">Home</a></p>
+            </div>
+        </div>
+        <p style="font-weight: 300; margin-top: 0;">look up words with embeddings</p>
+        <hr>
+        <input type="text" id="search-box" placeholder="search in english or japanese..." disabled>
+        <div id="status">loading...</div>
+        <div id="results"></div>
+    </div>
+</body>
+</html>
