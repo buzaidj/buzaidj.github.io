@@ -25,8 +25,8 @@ FIELD_SEP = "\x1f"
 NOTETYPE_FIELDS = {
     # Japanese sentences: VocabKanji(4), VocabFurigana(5), VocabDef(8), SentKanji(0)
     1666627418178: {"w": 4, "r": 5, "m": 8, "s": 0},
-    # Kaishi 1.5k: Word(0), Word Reading(1), Word Meaning(2), Sentence(5)
-    1708628080880: {"w": 0, "r": 1, "m": 2, "s": 5},
+    # Kaishi 1.5k: Word(0), Word Furigana(3), Word Meaning(2), Sentence(5)
+    1708628080880: {"w": 0, "r": 3, "m": 2, "s": 5},
     # (deprecated) Words I find in the wild: Word(0), Word furigana(1), Meaning(2), Sentence(3)
     1741510848189: {"w": 0, "r": 1, "m": 2, "s": 3},
     # カルテット: Word(0), Word furigana(1), Meaning(2), Sentence(3)
@@ -40,8 +40,10 @@ HTML_RE = re.compile(r"<[^>]+>")
 
 
 def strip_markup(text: str) -> str:
+    import html
     text = SOUND_RE.sub("", text)
     text = HTML_RE.sub("", text)
+    text = html.unescape(text)
     return text.strip()
 
 

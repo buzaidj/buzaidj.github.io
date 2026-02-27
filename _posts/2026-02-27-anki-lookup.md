@@ -50,12 +50,14 @@ permalink: /anki/
     }
     .result-word {
         font-weight: 500;
-        font-size: 18px;
+        font-size: 20px;
     }
-    .result-reading {
+    .result-word rt {
         font-weight: 300;
-        color: #666;
-        margin-left: 0.4rem;
+        font-size: 11px;
+    }
+    .result-word ruby {
+        ruby-align: center;
     }
     .result-meaning {
         margin-top: 0.2rem;
@@ -251,10 +253,7 @@ permalink: /anki/
 
             let html = '<div>';
             html += `<span class="result-score">${score.toFixed(3)}</span>`;
-            html += `<span class="result-word">${esc(c.w)}</span>`;
-            if (c.r && c.r !== c.w) {
-                html += `<span class="result-reading">(${esc(c.r)})</span>`;
-            }
+            html += `<span class="result-word">${furigana(c.r, c.w)}</span>`;
             html += '</div>';
             if (c.m) html += `<div class="result-meaning">${esc(c.m)}</div>`;
             if (c.s) html += `<div class="result-sentence">${esc(c.s)}</div>`;
@@ -263,6 +262,18 @@ permalink: /anki/
             div.innerHTML = html;
             resultsEl.appendChild(div);
         }
+    }
+
+    // Convert "乗[の]り遅[おく]れる" -> "<ruby>乗<rt>の</rt></ruby>り<ruby>遅<rt>おく</rt></ruby>れる"
+    // If reading has no brackets (e.g. "おくれる"), put it as ruby over the word
+    function furigana(reading, word) {
+        if (reading && reading.includes('[')) {
+            return esc(reading).replace(/ /g, '').replace(/([\u4e00-\u9faf\u3400-\u4dbf]+)\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>');
+        }
+        if (reading && reading !== word && /[\u4e00-\u9faf]/.test(word)) {
+            return `<ruby>${esc(word)}<rt>${esc(reading)}</rt></ruby>`;
+        }
+        return esc(word);
     }
 
     function esc(s) {
