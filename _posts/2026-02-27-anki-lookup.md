@@ -21,6 +21,20 @@ permalink: /anki/
         outline: none;
         border-color: #888;
     }
+    #controls {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    #model-select {
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+        padding: 0.3rem 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: white;
+    }
     #status {
         font-size: 13px;
         color: #888;
@@ -72,46 +86,134 @@ permalink: /anki/
 
 <script>document.querySelector('.two-col').style.width = '100%';</script>
 
-<p style="font-weight: 300; margin-top: 0;">look up words with embeddings</p>
-
+<div id="controls">
+    <span style="font-weight: 300;">look up words with embeddings</span>
+    <select id="model-select">
+        <option value="e5s" selected>e5-small (multilingual, 118 MB)</option>
+        <option value="e5b">e5-base (multilingual, 270 MB)</option>
+        <option value="ruri">ruri-v3-30m (japanese, 42 MB)</option>
+    </select>
+</div>
 <input type="text" id="search-box" placeholder="search in english or japanese..." disabled>
 <div id="status">loading...</div>
 <div id="results"></div>
 
 <script type="module">
-    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+    import { pipeline, AutoTokenizer } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
 
     const statusEl = document.getElementById('status');
     const searchBox = document.getElementById('search-box');
     const resultsEl = document.getElementById('results');
+    const modelSelect = document.getElementById('model-select');
 
     let cards = null;
-    let embeddings = null;
-    let embedder = null;
-    const DIM = 384;
 
-    async function init() {
-        statusEl.textContent = 'downloading model...';
+    // Each model has: embeddings (Float32Array), dim, embed (async fn query -> vec)
+    const models = {
+        e5s: { embeddings: null, dim: 384, embed: null, loading: false, loaded: false },
+        e5b: { embeddings: null, dim: 768, embed: null, loading: false, loaded: false },
+        ruri: { embeddings: null, dim: 256, embed: null, loading: false, loaded: false },
+    };
 
-        const [cardsData, embBuf, pipe] = await Promise.all([
-            fetch('/assets/anki/cards.json').then(r => r.json()),
-            fetch('/assets/anki/embeddings.bin').then(r => r.arrayBuffer()),
-            pipeline('feature-extraction', 'Xenova/multilingual-e5-small'),
-        ]);
+    let activeModel = 'e5s';
 
-        cards = cardsData;
-        embeddings = new Float32Array(embBuf);
-        embedder = pipe;
-
-        statusEl.textContent = `ready — ${cards.length} cards loaded`;
-        searchBox.disabled = false;
-        searchBox.focus();
+    async function loadCards() {
+        if (cards) return;
+        cards = await fetch('/assets/anki/cards.json').then(r => r.json());
     }
 
-    function cosineSim(a, b, offset) {
+    async function loadE5Model(key, hfId, embFile, dim) {
+        const m = models[key];
+        if (m.loaded || m.loading) return;
+        m.loading = true;
+        statusEl.textContent = `downloading ${key} model...`;
+
+        const [embBuf, pipe] = await Promise.all([
+            fetch(`/assets/anki/${embFile}`).then(r => r.arrayBuffer()),
+            pipeline('feature-extraction', hfId),
+        ]);
+
+        m.embeddings = new Float32Array(embBuf);
+        m.embed = async (query) => {
+            const out = await pipe(`query: ${query}`, { pooling: 'mean', normalize: true });
+            return out.data;
+        };
+        m.loading = false;
+        m.loaded = true;
+    }
+
+    async function loadRuriModel() {
+        const m = models.ruri;
+        if (m.loaded || m.loading) return;
+        m.loading = true;
+        statusEl.textContent = 'downloading ruri model...';
+
+        const ort = await import('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/esm/ort.min.js');
+        ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/';
+
+        const [embBuf, modelBuf, tokenizer] = await Promise.all([
+            fetch('/assets/anki/emb_ruri.bin').then(r => r.arrayBuffer()),
+            fetch('/assets/anki/ruri/model.onnx').then(r => r.arrayBuffer()),
+            AutoTokenizer.from_pretrained('cl-nagoya/ruri-v3-30m'),
+        ]);
+
+        m.embeddings = new Float32Array(embBuf);
+
+        const session = await ort.InferenceSession.create(modelBuf, {
+            executionProviders: ['wasm'],
+        });
+
+        m.embed = async (query) => {
+            const encoded = await tokenizer(query, { padding: false, truncation: true });
+            const ids = encoded.input_ids.data;
+            const mask = encoded.attention_mask.data;
+
+            const feeds = {
+                input_ids: new ort.Tensor('int64', ids, [1, ids.length]),
+                attention_mask: new ort.Tensor('int64', mask, [1, mask.length]),
+            };
+            const results = await session.run(feeds);
+            const hidden = results['last_hidden_state'].data;
+            const seqLen = ids.length;
+            const dim = 256;
+
+            // Mean pooling over attention-masked tokens
+            const vec = new Float32Array(dim);
+            let count = 0;
+            for (let t = 0; t < seqLen; t++) {
+                if (Number(mask[t]) === 1) {
+                    for (let d = 0; d < dim; d++) {
+                        vec[d] += hidden[t * dim + d];
+                    }
+                    count++;
+                }
+            }
+            for (let d = 0; d < dim; d++) vec[d] /= count;
+
+            // L2 normalize
+            let norm = 0;
+            for (let d = 0; d < dim; d++) norm += vec[d] * vec[d];
+            norm = Math.sqrt(norm);
+            for (let d = 0; d < dim; d++) vec[d] /= norm;
+
+            return vec;
+        };
+
+        m.loading = false;
+        m.loaded = true;
+    }
+
+    async function ensureModel(key) {
+        if (models[key].loaded) return;
+        if (key === 'e5s') await loadE5Model('e5s', 'Xenova/multilingual-e5-small', 'emb_e5s.bin', 384);
+        else if (key === 'e5b') await loadE5Model('e5b', 'Xenova/multilingual-e5-base', 'emb_e5b.bin', 768);
+        else if (key === 'ruri') await loadRuriModel();
+    }
+
+    function cosineSim(a, b, offset, dim) {
         let dot = 0;
         let normB = 0;
-        for (let i = 0; i < DIM; i++) {
+        for (let i = 0; i < dim; i++) {
             const bv = b[offset + i];
             dot += a[i] * bv;
             normB += bv * bv;
@@ -120,14 +222,20 @@ permalink: /anki/
     }
 
     async function search(query) {
-        if (!query.trim() || !embedder) return;
+        if (!query.trim()) {
+            resultsEl.innerHTML = '';
+            return;
+        }
 
-        const output = await embedder(`query: ${query}`, { pooling: 'mean', normalize: true });
-        const qvec = output.data;
+        const m = models[activeModel];
+        if (!m.loaded) return;
+
+        const qvec = await m.embed(query);
+        const dim = m.dim;
 
         const scores = new Float32Array(cards.length);
         for (let i = 0; i < cards.length; i++) {
-            scores[i] = cosineSim(qvec, embeddings, i * DIM);
+            scores[i] = cosineSim(qvec, m.embeddings, i * dim, dim);
         }
 
         const indices = Array.from({ length: cards.length }, (_, i) => i);
@@ -163,11 +271,40 @@ permalink: /anki/
         return d.innerHTML;
     }
 
+    // Debounced search
     let timer = null;
     searchBox.addEventListener('input', () => {
         clearTimeout(timer);
         timer = setTimeout(() => search(searchBox.value), 250);
     });
+
+    // Model switching
+    modelSelect.addEventListener('change', async () => {
+        const key = modelSelect.value;
+        activeModel = key;
+        searchBox.disabled = true;
+        resultsEl.innerHTML = '';
+
+        try {
+            await ensureModel(key);
+            statusEl.textContent = `ready — ${cards.length} cards (${key})`;
+            searchBox.disabled = false;
+            searchBox.focus();
+            if (searchBox.value.trim()) search(searchBox.value);
+        } catch (err) {
+            statusEl.textContent = `error: ${err.message}`;
+            console.error(err);
+        }
+    });
+
+    // Init: load cards + default model
+    async function init() {
+        await loadCards();
+        await ensureModel('e5s');
+        statusEl.textContent = `ready — ${cards.length} cards (e5s)`;
+        searchBox.disabled = false;
+        searchBox.focus();
+    }
 
     init().catch(err => {
         statusEl.textContent = `error: ${err.message}`;
