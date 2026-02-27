@@ -1,4 +1,171 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2025-08-17T21:30:39-07:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Upstate NY Summer and Kaaterskill Falls</title><link href="http://localhost:4000/upstate" rel="alternate" type="text/html" title="Upstate NY Summer and Kaaterskill Falls" /><published>2025-08-17T15:00:00-07:00</published><updated>2025-08-17T15:00:00-07:00</updated><id>http://localhost:4000/upstate</id><content type="html" xml:base="http://localhost:4000/upstate"><![CDATA[<p>Halfway through my one month New York trip, I got tired of heat where the only reprieve was manmade air conditioning. I felt a sudden nostaglic longing for upstate and the summers I spent there without AC, swimming under waterfalls, (small) cliff-jumping, and laying on flat rocks next to rivers.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-02-27T13:51:42-08:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Anki Lookup</title><link href="http://localhost:4000/anki/" rel="alternate" type="text/html" title="Anki Lookup" /><published>2026-02-27T11:00:00-08:00</published><updated>2026-02-27T11:00:00-08:00</updated><id>http://localhost:4000/anki-lookup</id><content type="html" xml:base="http://localhost:4000/anki/"><![CDATA[<style>
+    #search-box {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        font-size: 16px;
+        font-family: 'Inter', sans-serif;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        margin-bottom: 0.5rem;
+    }
+    #search-box:focus {
+        outline: none;
+        border-color: #888;
+    }
+    #status {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 1rem;
+        font-weight: 300;
+    }
+    .result {
+        padding: 0.7rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    .result:last-child {
+        border-bottom: none;
+    }
+    .result-word {
+        font-weight: 500;
+        font-size: 18px;
+    }
+    .result-reading {
+        font-weight: 300;
+        color: #666;
+        margin-left: 0.4rem;
+    }
+    .result-meaning {
+        margin-top: 0.2rem;
+        font-weight: 300;
+        font-size: 15px;
+    }
+    .result-sentence {
+        margin-top: 0.2rem;
+        font-size: 13px;
+        color: #555;
+        font-weight: 300;
+    }
+    .result-deck {
+        font-size: 11px;
+        color: #aaa;
+        margin-top: 0.15rem;
+    }
+    .result-score {
+        font-size: 11px;
+        color: #bbb;
+        float: right;
+        margin-top: 0.15rem;
+    }
+    #results {
+        margin-top: 0.5rem;
+    }
+</style>
+
+<script>document.querySelector('.two-col').style.width = '100%';</script>
+
+<p style="font-weight: 300; margin-top: 0;">look up words with embeddings</p>
+
+<p><input type="text" id="search-box" placeholder="search in english or japanese..." disabled="" /></p>
+<div id="status">loading...</div>
+<div id="results"></div>
+
+<script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+    const statusEl = document.getElementById('status');
+    const searchBox = document.getElementById('search-box');
+    const resultsEl = document.getElementById('results');
+
+    let cards = null;
+    let embeddings = null;
+    let embedder = null;
+    const DIM = 384;
+
+    async function init() {
+        statusEl.textContent = 'downloading model...';
+
+        const [cardsData, embBuf, pipe] = await Promise.all([
+            fetch('/assets/anki/cards.json').then(r => r.json()),
+            fetch('/assets/anki/embeddings.bin').then(r => r.arrayBuffer()),
+            pipeline('feature-extraction', 'Xenova/multilingual-e5-small'),
+        ]);
+
+        cards = cardsData;
+        embeddings = new Float32Array(embBuf);
+        embedder = pipe;
+
+        statusEl.textContent = `ready — ${cards.length} cards loaded`;
+        searchBox.disabled = false;
+        searchBox.focus();
+    }
+
+    function cosineSim(a, b, offset) {
+        let dot = 0;
+        let normB = 0;
+        for (let i = 0; i < DIM; i++) {
+            const bv = b[offset + i];
+            dot += a[i] * bv;
+            normB += bv * bv;
+        }
+        return dot / (Math.sqrt(normB) + 1e-8);
+    }
+
+    async function search(query) {
+        if (!query.trim() || !embedder) return;
+
+        const output = await embedder(`query: ${query}`, { pooling: 'mean', normalize: true });
+        const qvec = output.data;
+
+        const scores = new Float32Array(cards.length);
+        for (let i = 0; i < cards.length; i++) {
+            scores[i] = cosineSim(qvec, embeddings, i * DIM);
+        }
+
+        const indices = Array.from({ length: cards.length }, (_, i) => i);
+        indices.sort((a, b) => scores[b] - scores[a]);
+        const top = indices.slice(0, 20);
+
+        resultsEl.innerHTML = '';
+        for (const idx of top) {
+            const c = cards[idx];
+            const score = scores[idx];
+            const div = document.createElement('div');
+            div.className = 'result';
+
+            let html = '<div>';
+            html += `<span class="result-score">${score.toFixed(3)}</span>`;
+            html += `<span class="result-word">${esc(c.w)}</span>`;
+            if (c.r && c.r !== c.w) {
+                html += `<span class="result-reading">(${esc(c.r)})</span>`;
+            }
+            html += '</div>';
+            if (c.m) html += `<div class="result-meaning">${esc(c.m)}</div>`;
+            if (c.s) html += `<div class="result-sentence">${esc(c.s)}</div>`;
+            if (c.d) html += `<div class="result-deck">${esc(c.d)}</div>`;
+
+            div.innerHTML = html;
+            resultsEl.appendChild(div);
+        }
+    }
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    let timer = null;
+    searchBox.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => search(searchBox.value), 250);
+    });
+
+    init().catch(err => {
+        statusEl.textContent = `error: ${err.message}`;
+        console.error(err);
+    });
+</script>]]></content><author><name></name></author><category term="tools" /><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Upstate NY Summer and Kaaterskill Falls</title><link href="http://localhost:4000/upstate" rel="alternate" type="text/html" title="Upstate NY Summer and Kaaterskill Falls" /><published>2025-08-17T15:00:00-07:00</published><updated>2025-08-17T15:00:00-07:00</updated><id>http://localhost:4000/upstate</id><content type="html" xml:base="http://localhost:4000/upstate"><![CDATA[<p>Halfway through my one month New York trip, I got tired of heat where the only reprieve was manmade air conditioning. I felt a sudden nostaglic longing for upstate and the summers I spent there without AC, swimming under waterfalls, (small) cliff-jumping, and laying on flat rocks next to rivers.</p>
 
 <p>I went to “maps.google.com” and searched “waterfall” and panned around upstate. I decided on a day trip with my Dad and family dog to Kaaterskill Falls. Kaaterskill is the closest real waterfall that seemed to have the upstate sensibilities for the do-it-your-way freely accessible untouched nature I wanted. The falls is a two stage waterfall, and was pretty dry when I want, creating a calm little pool at the top to swim in. My family dog was also able to jump in, but it felt a bit bothersome to others to have a dog in the water. Kaaterskill is of course packed on a Saturday in July, owing to it being the closet true falls to the city by a few hours relative to other upstate waterfalls. If I went again, I’d aim to beat the crowd and get there earlier than 11am.</p>
 

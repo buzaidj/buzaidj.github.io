@@ -107,7 +107,7 @@ def main():
 
     # Compute embeddings
     model = SentenceTransformer("intfloat/multilingual-e5-small")
-    texts = [f"passage: {c['w']} {c['m']}" for c in cards]
+    texts = [f"passage: {c['w']} {c['m']} {c['s']}" for c in cards]
 
     print("Computing embeddings...")
     embeddings = model.encode(texts, show_progress_bar=True, normalize_embeddings=True)
