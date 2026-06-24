@@ -1,1 +1,5 @@
 _site/
+.env
+__pycache__/
+assets/updated-badge.svg
+assets/updated-badge.svg.png

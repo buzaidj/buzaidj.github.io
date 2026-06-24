@@ -1,0 +1,2 @@
+if you are only updatting embeddings, you should try to compress git history because the
+embeddings are ~59MB and history can grow unbounded here. happy embedding!
