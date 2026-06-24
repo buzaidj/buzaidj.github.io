@@ -3,8 +3,10 @@
 
 import json
 import re
+import shutil
 import sqlite3
 import sys
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -64,21 +66,37 @@ def main():
         print(f"Anki database not found: {ANKI_DB}", file=sys.stderr)
         sys.exit(1)
 
-    conn = sqlite3.connect(f"file:{ANKI_DB}?mode=ro", uri=True)
-    conn.row_factory = sqlite3.Row
+    # Copy the DB to a temp file to avoid locking issues when Anki is open
+    with tempfile.NamedTemporaryFile(suffix=".anki2", delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+    shutil.copy2(ANKI_DB, tmp_path)
+    # Also copy the WAL file if it exists so we get a consistent snapshot
+    wal = ANKI_DB.parent / (ANKI_DB.name + "-wal")
+    if wal.exists():
+        shutil.copy2(wal, tmp_path.parent / (tmp_path.name + "-wal"))
 
-    decks = {r["id"]: r["name"] for r in conn.execute("SELECT id, name FROM decks")}
+    try:
+        conn = sqlite3.connect(str(tmp_path))
+        conn.row_factory = sqlite3.Row
 
-    rows = conn.execute(
-        """
-        SELECT DISTINCT n.id AS nid, n.mid, n.flds, c.did
-        FROM cards c
-        JOIN notes n ON c.nid = n.id
-        WHERE c.did NOT IN ({})
-        """.format(",".join("?" * len(EXCLUDED_DECK_IDS))),
-        list(EXCLUDED_DECK_IDS),
-    ).fetchall()
-    conn.close()
+        decks = {r["id"]: r["name"] for r in conn.execute("SELECT id, name FROM decks")}
+
+        rows = conn.execute(
+            """
+            SELECT DISTINCT n.id AS nid, n.mid, n.flds, c.did
+            FROM cards c
+            JOIN notes n ON c.nid = n.id
+            WHERE c.did NOT IN ({})
+            """.format(",".join("?" * len(EXCLUDED_DECK_IDS))),
+            list(EXCLUDED_DECK_IDS),
+        ).fetchall()
+        conn.close()
+    finally:
+        tmp_path.unlink(missing_ok=True)
+        wal_tmp = tmp_path.parent / (tmp_path.name + "-wal")
+        wal_tmp.unlink(missing_ok=True)
+        shm_tmp = tmp_path.parent / (tmp_path.name + "-shm")
+        shm_tmp.unlink(missing_ok=True)
 
     seen_nids = set()
     cards = []
