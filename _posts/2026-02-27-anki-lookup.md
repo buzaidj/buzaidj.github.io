@@ -441,7 +441,7 @@ All of these are combined with [reciprocal rank fusion](https://learn.microsoft.
     // If reading has no brackets (e.g. "おくれる"), put it as ruby over the word
     function furigana(reading, word) {
         if (reading && reading.includes('[')) {
-            return esc(reading).replace(/ /g, '').replace(/([\u4e00-\u9faf\u3400-\u4dbf]+)\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>');
+            return esc(reading).replace(/ /g, '').replace(/([\u4e00-\u9faf\u3400-\u4dbf\u3005\u3006\u30f6\u30f6]+)\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>');
         }
         if (reading && reading !== word && /[\u4e00-\u9faf]/.test(word)) {
             return `<ruby>${esc(word)}<rt>${esc(reading)}</rt></ruby>`;
