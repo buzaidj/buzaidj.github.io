@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-06-24T14:38:42-07:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Anki Lookup</title><link href="http://localhost:4000/anki/" rel="alternate" type="text/html" title="Anki Lookup" /><published>2026-02-27T11:00:00-08:00</published><updated>2026-02-27T11:00:00-08:00</updated><id>http://localhost:4000/anki-lookup</id><content type="html" xml:base="http://localhost:4000/anki/"><![CDATA[<style>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2026-06-27T23:28:51-07:00</updated><id>http://localhost:4000/feed.xml</id><entry><title type="html">Anki Lookup</title><link href="http://localhost:4000/anki/" rel="alternate" type="text/html" title="Anki Lookup" /><published>2026-02-27T11:00:00-08:00</published><updated>2026-02-27T11:00:00-08:00</updated><id>http://localhost:4000/anki-lookup</id><content type="html" xml:base="http://localhost:4000/anki/"><![CDATA[<style>
     #search-box {
         width: 100%;
         padding: 0.6rem 0.8rem;
@@ -72,14 +72,13 @@
 
 <script>document.querySelector('.two-col').style.width = '100%';</script>
 
-<p>This is a search engine over my personal Anki deck of ~11,000 Japanese cards. It runs entirely in your browser — the card text and a few sets of precomputed embeddings download once, and every keystroke is matched locally with no server. You can search in English (“to study” finds 勉強) or Japanese, by meaning or by reading.</p>
+<p>I have around 11,000 Anki cards dedicated to Japanese learning. 4,000 of these are works I discovered on my own outside of study materials: found in books, heard in conversation, etc. These cards are mostly targed torwards recognition, which gives me a ton of breadth, but one thing I consistenlty struggle with is recall.</p>
 
-<p>The interesting part is that a single embedding model isn’t enough, so the results fuse a few different indexes together. Each one exists because something I actually typed didn’t work:</p>
-
+<p>This is a search index over my Anki cards. It uses a few language models and other heuristics to find good search matches:</p>
 <ul>
-  <li><strong>Meaning</strong> (two neural models, multilingual + Japanese): the baseline. Good for “what’s the word for ___”, less good when I half-remember a reading.</li>
-  <li><strong>Reading</strong>: I’d type ちゅうとはんぱ wanting 中途半端, but a meaning model sees kana and kanji as totally different text. So I normalize every card’s furigana to plain kana and match on that directly.</li>
-  <li><strong>Sound</strong>: sometimes I misremember a word and type something that only <em>sounds</em> close. I once confused ぐにゃり with ぐんやり. String matching is useless here, so this index converts kana to phonemes (using articulatory features) and measures how different two words sound — き and ぎ differ by one feature, so べんきょう and a typo’d べんぎょう come out nearly identical.</li>
+  <li>meaning - two embeddings models, a multilingual ( ) and a Japanese-specific model turn each card into vectors. This works well for synonyms, but doesn’t match well when I only remember a part of the word I want to find.</li>
+  <li>readings - embedding models treat kana and kanji as unrelated text. A lot of words in Japanese “optionally” have kanji, so seraching くりかえす matches 繰り返す. Same word, different spelling.</li>
+  <li>sound - sometimes I misremember a word and type something that only sounds close. I once misremembered ぐにゃり (flabby)  as ぐんやり. This converts kana to IPA and compares the words by phonemes, so typos that sound the same still match.</li>
 </ul>
 
 <p>All of these are combined with <a href="https://learn.microsoft.com/en-us/azure/search/hybrid-search-ranking">reciprocal rank fusion</a>, so a card that ranks well in <em>any</em> index floats to the top, and kana queries lean harder on reading and sound than on meaning.</p>
@@ -436,7 +435,7 @@
     // If reading has no brackets (e.g. "おくれる"), put it as ruby over the word
     function furigana(reading, word) {
         if (reading && reading.includes('[')) {
-            return esc(reading).replace(/ /g, '').replace(/([\u4e00-\u9faf\u3400-\u4dbf]+)\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>');
+            return esc(reading).replace(/ /g, '').replace(/([\u4e00-\u9faf\u3400-\u4dbf\u3005\u3006\u30f6\u30f6]+)\[([^\]]+)\]/g, '<ruby>$1<rt>$2</rt></ruby>');
         }
         if (reading && reading !== word && /[\u4e00-\u9faf]/.test(word)) {
             return `<ruby>${esc(word)}<rt>${esc(reading)}</rt></ruby>`;
