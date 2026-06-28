@@ -29,17 +29,14 @@ ANKI_CONNECT_URL = "http://localhost:8765"
 DECK_NAME = "発見した言葉"
 MODEL_NAME = "発見した言葉"
 KEEP_EMAIL = ENV.get("KEEP_EMAIL", "")
-KEEP_TOKEN_PATH = os.path.expanduser(ENV.get("KEEP_TOKEN_PATH", "~/.config/gkeep_master_token"))
+KEEP_MASTER_TOKEN = ENV.get("KEEP_MASTER_TOKEN", "")
 KEEP_NOTE_TITLE = "ことば"
 
 
 def get_keep_note():
     """Authenticate to Google Keep and return the most recent ことば note."""
-    with open(KEEP_TOKEN_PATH) as f:
-        master_token = f.read().strip()
-
     keep = gkeepapi.Keep()
-    keep.authenticate(KEEP_EMAIL, master_token)
+    keep.authenticate(KEEP_EMAIL, KEEP_MASTER_TOKEN)
 
     notes = []
     for note in keep.find(query=KEEP_NOTE_TITLE):
