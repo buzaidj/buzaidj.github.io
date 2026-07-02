@@ -34,7 +34,6 @@ cp .env.example .env
 | `KEEP_MASTER_TOKEN` | Google Keep のマスタートークン（[gpsoauth](https://github.com/simon-weber/gpsoauth) で取得） |
 | `FORVO_API_KEY` | [Forvo API](https://api.forvo.com/) のキー |
 | `ACCENTS_FILE` | kanjium 辞書ファイルのパス（デフォルト `~/Downloads/kanjium_accents.txt`） |
-| `ELEVENLABS_API_KEY` | （任意）ElevenLabs の文章音声生成用 |
 | `ANKI_MEDIA_DIR` | Anki の collection.media パス（プロファイル名が違う場合は変更） |
 
 ## Keep ノートのフォーマット
@@ -58,6 +57,3 @@ python3 import_from_keep.py && \
   python3 populate_pitch_accent.py && \
   python3 build_anki_embeddings.py
 ```
-
-`generate_sentence_audio.py` は ElevenLabs で例文音声を生成する独立スクリプト
-（上のパイプラインには含まれない）。
